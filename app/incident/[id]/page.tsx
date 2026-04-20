@@ -19,6 +19,14 @@ import {
   getEffectiveAlarmState,
 } from "@/lib/alarm-state";
 
+// Maps alarm tags to trend chart variable keys for cross-highlight
+const TAG_TO_VAR: Record<string, string> = {
+  "BFW-P-201A-PI-101": "Suction Pressure (psig)",
+  "BFW-P-201A-VT-102": "Vibration (mm/s)",
+  "HRSG-201-LI-201": "Drum Level (%)",
+  "STM-HDR-201-PI-301": "Steam Header (psig)",
+};
+
 const CHECKLISTS: Record<string, string[]> = {
   "INC-001": [
     "Verify BFW-P-201A suction isolation valve is fully open (FCV-201A-SV01) — partial closure is the most common cause of suction pressure drop at this duty point.",
@@ -44,6 +52,8 @@ export default function IncidentDetailPage({
   const wasAckedOnMount = useRef(!!getAcknowledgment(id));
   const [preloadAck] = useState(() => getAcknowledgment(id));
   const [newAck, setNewAck] = useState<{ ackedAt: string; ackedBy: string } | null>(null);
+  const [activeVar, setActiveVar] = useState<string | null>(null);
+
 
   useEffect(() => {
     return subscribe(() => {
@@ -76,17 +86,17 @@ export default function IncidentDetailPage({
     <div className="mx-auto max-w-7xl px-4 py-6">
       {/* Redirect banner — shown when user acks during this visit */}
       {newAck && (
-        <div className="mb-4 rounded border border-emerald-800 bg-emerald-950/30 px-4 py-3">
-          <span className="text-emerald-400 font-mono text-xs">
-            ✓ Incident {id} acknowledged at {newAck.ackedAt} UTC by {newAck.ackedBy} · Returning to triage view…
+        <div className="mb-4 rounded border border-emerald-300 bg-emerald-50 px-4 py-3">
+          <span className="text-emerald-700 font-mono text-xs">
+            Incident {id} acknowledged at {newAck.ackedAt} UTC by {newAck.ackedBy} · Returning to triage view…
           </span>
         </div>
       )}
 
       {/* Persistent banner — shown when page loads for an already-acked incident */}
       {!newAck && preloadAck && (
-        <div className="mb-4 rounded border border-emerald-800 bg-emerald-950/30 px-4 py-3">
-          <span className="text-emerald-400 font-mono text-xs">
+        <div className="mb-4 rounded border border-emerald-300 bg-emerald-50 px-4 py-3">
+          <span className="text-emerald-700 font-mono text-xs">
             ✓ Incident {id} acknowledged at {preloadAck.ackedAt} UTC by {preloadAck.ackedBy}
           </span>
         </div>
@@ -100,13 +110,14 @@ export default function IncidentDetailPage({
           >
             {incident.severity}
           </span>
-          <span className="font-mono text-xs text-zinc-500">{incident.id}</span>
-          <span className="font-mono text-xs text-zinc-600">
+          <span className="font-mono text-xs text-slate-500">{incident.id}</span>
+          <span className="font-mono text-xs text-slate-400">
             {formatTimestamp(incident.first_alarm_time)} UTC
           </span>
         </div>
-        <h1 className="text-xl font-semibold text-zinc-100 mb-1">{incident.title}</h1>
-        <p className="text-sm text-zinc-400">
+        <h1 className="text-xl font-semibold text-slate-900 mb-1">{incident.title}</h1>
+        <p className="text-xs text-slate-400 font-mono mt-0.5 mb-2">Incident evidence — acknowledge before handoff submission</p>
+        <p className="text-sm text-slate-600">
           {incident.alarms.length} alarms · {incident.affected_units.length} affected units ·{" "}
           {incident.affected_units.join(", ")}
         </p>
@@ -115,24 +126,30 @@ export default function IncidentDetailPage({
       {/* Root cause + next check */}
       <div className="grid sm:grid-cols-2 gap-3 mb-8">
         <div
-          className={`rounded border px-4 py-3 ${
+          className={`rounded border px-4 py-3 shadow-sm ${
             isCritical
-              ? "border-red-800 bg-red-950/20"
-              : "border-orange-800 bg-orange-950/10"
+              ? "border-red-200 bg-red-50"
+              : "border-orange-200 bg-orange-50"
           }`}
         >
-          <div className="text-[10px] font-semibold tracking-widest text-zinc-600 uppercase mb-2">
+          <div className="text-[10px] font-semibold tracking-widest text-slate-400 uppercase mb-1">
             Root Cause Hypothesis
           </div>
-          <p className="text-sm text-zinc-300 leading-relaxed">
+          <p className="text-[10px] text-slate-400 font-mono mb-2">
+            Source: AgileOps Database (alarm rationalization record)
+          </p>
+          <p className="text-sm text-slate-700 leading-relaxed">
             {incident.root_cause_hypothesis}
           </p>
         </div>
-        <div className="rounded border border-zinc-700 bg-zinc-900/50 px-4 py-3">
-          <div className="text-[10px] font-semibold tracking-widest text-zinc-600 uppercase mb-2">
+        <div className="rounded border border-slate-200 bg-slate-50 px-4 py-3 shadow-sm">
+          <div className="text-[10px] font-semibold tracking-widest text-slate-400 uppercase mb-1">
             Recommended Next Check
           </div>
-          <p className="text-sm text-zinc-300 leading-relaxed">
+          <p className="text-[10px] text-slate-400 font-mono mb-2">
+            Source: Alarm Help (approved response procedure)
+          </p>
+          <p className="text-sm text-slate-700 leading-relaxed">
             {incident.recommended_next_check}
           </p>
         </div>
@@ -143,35 +160,48 @@ export default function IncidentDetailPage({
         <div className="lg:col-span-2 space-y-6">
           {/* Cascade timeline */}
           <div>
-            <h2 className="text-xs font-semibold tracking-widest text-zinc-500 uppercase mb-4">
+            <h2 className="text-xs font-semibold tracking-widest text-[#0066B2] uppercase mb-4">
               Alarm Cascade Timeline
             </h2>
             <div className="relative">
-              <div className="absolute left-[7px] top-2 bottom-2 w-px bg-zinc-700" />
+              <div className="absolute left-[7px] top-2 bottom-2 w-px bg-slate-200" />
               <div className="space-y-0">
                 {incident.alarms.map((alarm) => {
                   const effectiveState = getEffectiveAlarmState(alarm);
                   const alarmAcked = effectiveState === "ACK";
+                  const varKey = TAG_TO_VAR[alarm.tag];
+                  const isLinked = !!varKey;
+                  const isHighlighted = activeVar && varKey === activeVar;
+                  const isDimmed = activeVar && varKey !== activeVar;
                   return (
                     <div
                       key={alarm.id}
-                      className={`relative flex gap-4 pb-3 transition-opacity ${alarmAcked ? "opacity-50" : ""}`}
+                      onClick={
+                        isLinked
+                          ? () => setActiveVar(activeVar === varKey ? null : varKey)
+                          : undefined
+                      }
+                      className={`relative flex gap-4 pb-3 transition-all rounded ${
+                        alarmAcked ? "opacity-50" : isDimmed ? "opacity-30" : ""
+                      } ${isHighlighted ? "bg-blue-50 -mx-1 px-1" : ""} ${
+                        isLinked ? "cursor-pointer" : ""
+                      }`}
                     >
                       {/* Dot */}
                       <div
-                        className={`relative z-10 mt-1 flex-shrink-0 h-3.5 w-3.5 rounded-full border-2 ${
+                        className={`relative z-10 mt-1 shrink-0 h-3.5 w-3.5 rounded-full border-2 ${
                           alarm.priority === "CRITICAL"
-                            ? "border-red-500 bg-red-900"
+                            ? "border-red-500 bg-red-100"
                             : alarm.priority === "HIGH"
-                            ? "border-orange-500 bg-orange-900"
+                            ? "border-orange-500 bg-orange-100"
                             : alarm.priority === "MED"
-                            ? "border-yellow-500 bg-yellow-900"
-                            : "border-zinc-600 bg-zinc-800"
+                            ? "border-yellow-500 bg-yellow-100"
+                            : "border-slate-400 bg-slate-100"
                         }`}
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-mono text-xs text-zinc-500">
+                          <span className="font-mono text-xs text-slate-400">
                             {formatTimestamp(alarm.timestamp)}
                           </span>
                           <span
@@ -180,8 +210,13 @@ export default function IncidentDetailPage({
                             {alarm.priority === "CRITICAL" ? "CRIT" : alarm.priority}
                           </span>
                           {alarmAcked && (
-                            <span className="inline-block rounded px-1 py-0.5 text-[9px] font-bold font-mono bg-emerald-900 text-emerald-300 border border-emerald-800">
+                            <span className="inline-block rounded px-1 py-0.5 text-[9px] font-bold font-mono bg-emerald-600 text-white">
                               ACK
+                            </span>
+                          )}
+                          {isLinked && (
+                            <span className="inline-block rounded px-1 py-0.5 text-[9px] font-mono text-[#0066B2] bg-blue-50 border border-blue-200">
+                              TREND
                             </span>
                           )}
                         </div>
@@ -190,10 +225,10 @@ export default function IncidentDetailPage({
                         >
                           {alarm.tag}
                         </div>
-                        <div className="text-xs text-zinc-400 mt-0.5 leading-snug">
+                        <div className="text-xs text-slate-600 mt-0.5 leading-snug">
                           {alarm.description}
                         </div>
-                        <div className="text-[10px] text-zinc-600 font-mono mt-0.5">
+                        <div className="text-[10px] text-slate-400 font-mono mt-0.5">
                           {alarm.value} {alarm.unit_of_measure} · SP: {alarm.setpoint} ·{" "}
                           {formatDeviation(alarm)}
                         </div>
@@ -207,16 +242,16 @@ export default function IncidentDetailPage({
 
           {/* 3-step checklist */}
           <div>
-            <h2 className="text-xs font-semibold tracking-widest text-zinc-500 uppercase mb-4">
+            <h2 className="text-xs font-semibold tracking-widest text-[#0066B2] uppercase mb-4">
               Response Checklist
             </h2>
             <div className="space-y-3">
               {checklist.map((step, idx) => (
                 <div key={idx} className="flex gap-3">
-                  <div className="flex-shrink-0 h-5 w-5 rounded border border-zinc-700 bg-zinc-800 flex items-center justify-center">
-                    <span className="font-mono text-[10px] text-zinc-500">{idx + 1}</span>
+                  <div className="shrink-0 h-5 w-5 rounded border border-slate-300 bg-slate-100 flex items-center justify-center">
+                    <span className="font-mono text-[10px] text-slate-500">{idx + 1}</span>
                   </div>
-                  <p className="text-xs text-zinc-400 leading-relaxed">{step}</p>
+                  <p className="text-xs text-slate-600 leading-relaxed">{step}</p>
                 </div>
               ))}
             </div>
@@ -228,40 +263,49 @@ export default function IncidentDetailPage({
 
         {/* RIGHT: Trend chart — unchanged */}
         <div className="lg:col-span-3">
-          <h2 className="text-xs font-semibold tracking-widest text-zinc-500 uppercase mb-4">
-            Process Trend — 02:47:00 to 02:53:00 UTC
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xs font-semibold tracking-widest text-[#0066B2] uppercase">
+              Process Trend — 02:47:00 to 02:53:00 UTC
+            </h2>
+            <p className="text-[10px] text-slate-400 font-mono">
+              Click TREND alarm or legend to cross-highlight
+            </p>
+          </div>
           {trendData.length > 0 ? (
-            <TrendChart data={trendData} />
+            <TrendChart
+              data={trendData}
+              activeVar={activeVar}
+              onVarClick={setActiveVar}
+            />
           ) : (
-            <div className="rounded border border-zinc-800 bg-zinc-900/50 flex items-center justify-center h-64">
-              <p className="text-xs text-zinc-600 font-mono">
+            <div className="rounded border border-slate-200 bg-slate-50 flex items-center justify-center h-64">
+              <p className="text-xs text-slate-400 font-mono">
                 Trend data not available for this incident
               </p>
             </div>
           )}
 
           {/* Legend / interpretation */}
-          <div className="mt-4 rounded border border-zinc-800 bg-zinc-900/30 px-4 py-3">
-            <div className="text-[10px] font-semibold tracking-widest text-zinc-600 uppercase mb-2">
+          <div className="mt-4 rounded border border-slate-200 bg-slate-50 px-4 py-3 shadow-sm">
+            <div className="text-[10px] font-semibold tracking-widest text-[#0066B2] uppercase mb-2">
               Trend Interpretation
             </div>
-            <ul className="space-y-1 text-xs text-zinc-500">
+            <ul className="space-y-1 text-xs text-slate-500">
               <li>
-                <span className="text-red-400 font-mono">Suction pressure</span> drops sharply
-                at 02:47 — first indicator of cavitation onset
+                <span className="text-red-600 font-mono">Suction pressure</span>{" "}
+                14.0 → 4.0 psig in &lt;2 min — cavitation onset confirmed at BFW-P-201A
               </li>
               <li>
-                <span className="text-orange-400 font-mono">Vibration</span> rises concurrently
-                — cavitation-induced hydraulic instability
+                <span className="text-orange-600 font-mono">Vibration</span>{" "}
+                3.0 → 16.0 mm/s concurrent rise — hydraulic instability from cavitation
               </li>
               <li>
-                <span className="text-yellow-400 font-mono">Drum level</span> lags ~30s —
-                delayed response as boiler feedwater flow collapses
+                <span className="text-yellow-600 font-mono">Drum level</span>{" "}
+                72% → 18% with ~30s lag — BFW supply collapse propagating to HRSG-201
               </li>
               <li>
-                <span className="text-blue-400 font-mono">Steam header pressure</span> drops last
-                — downstream consequence of drum level loss
+                <span className="text-blue-600 font-mono">Steam header</span>{" "}
+                625 → 555 psig last — downstream consequence reaching TRB-101
               </li>
             </ul>
           </div>

@@ -19,14 +19,14 @@ export default function AckButton({ incidentId }: { incidentId: string }) {
         disabled={!!ack}
         className={`w-full rounded px-4 py-2.5 text-xs font-semibold tracking-wide transition-all ${
           ack
-            ? "bg-green-900/40 text-green-400 border border-green-800 cursor-default"
-            : "bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700"
+            ? "bg-emerald-50 text-emerald-700 border border-emerald-300 cursor-default"
+            : "bg-[#0066B2] hover:bg-[#004E8C] text-white border border-[#0066B2]"
         }`}
       >
         {ack ? "✓ Acknowledged" : `Acknowledge Incident ${incidentId}`}
       </button>
       {ack && (
-        <p className="mt-2 text-[10px] text-zinc-600 font-mono text-center">
+        <p className="mt-2 text-[10px] text-slate-400 font-mono text-center">
           Acknowledged at {ack.ackedAt} UTC · Operator: {ack.ackedBy}
         </p>
       )}

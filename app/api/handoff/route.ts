@@ -59,6 +59,7 @@ Requirements for your response:
 - Cover: (1) the primary incident status, (2) current process status after the event, (3) standby equipment readiness, (4) the secondary incident, (5) any open maintenance items or watchpoints for the incoming shift
 - If an incident is marked as acknowledged: true, frame it as resolved/contained rather than ongoing — note that it has been acknowledged by the outgoing operator
 - If an incident is marked as acknowledged: false, frame it as still active and requiring attention from the incoming shift
+- Each bullet that references a specific incident MUST include its ID (INC-001 or INC-002) explicitly within the bullet text
 - Do NOT add any preamble, headers, or conclusion — just the 5 bullets
 - Output exactly 5 complete bullets, each one self-contained`;
 
@@ -76,11 +77,29 @@ Requirements for your response:
     const text =
       message.content[0].type === "text" ? message.content[0].text : "";
 
-    const bullets = text
+    const rawBullets = text
       .split("\n")
       .map((line) => line.trim())
       .filter((line) => line.startsWith("•"))
       .map((line) => line.slice(1).trim());
+
+    function formatBulletTime(iso: string): string {
+      return new Date(iso).toLocaleTimeString("en-US", {
+        hour: "2-digit", minute: "2-digit", second: "2-digit",
+        hour12: false, timeZone: "UTC",
+      });
+    }
+
+    const bullets = rawBullets.map((bulletText) => {
+      const refs = [...bulletText.matchAll(/INC-\d+/g)].map((m) => m[0]);
+      const uniqueRefs = [...new Set(refs)];
+      const evidence = uniqueRefs.map((id) => {
+        const inc = incidentSummaries.find((i) => i.id === id);
+        if (!inc) return id;
+        return `${id} · ${inc.alarm_count} alarms · ${formatBulletTime(inc.first_alarm)}–${formatBulletTime(inc.last_alarm)} UTC`;
+      });
+      return { text: bulletText, evidence };
+    });
 
     return NextResponse.json({ bullets, raw: text });
   } catch (error) {

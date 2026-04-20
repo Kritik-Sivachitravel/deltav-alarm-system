@@ -10,6 +10,7 @@ const NAV_LINKS = [
   { href: "/inbox", label: "Raw Inbox", shortLabel: "Inbox" },
   { href: "/incident/INC-001", label: "Incident Detail", shortLabel: "Detail" },
   { href: "/handoff", label: "Shift Handoff", shortLabel: "Handoff" },
+  { href: "/ecosystem", label: "Ecosystem", shortLabel: "Eco" },
 ];
 
 // Scenario clock: starts at 02:47:00 UTC and ticks forward in real time
@@ -53,13 +54,16 @@ export default function NavBar() {
   }
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-zinc-800 bg-zinc-950/95 backdrop-blur">
+    <nav
+      className="sticky top-0 z-50 border-b border-slate-200 bg-white shadow-sm"
+      style={{ borderTop: "3px solid #0066B2" }}
+    >
       <div className="mx-auto flex max-w-7xl items-center gap-1 px-4 py-0">
         {/* Logo / brand */}
-        <div className="flex items-center gap-2 py-3 pr-6 border-r border-zinc-800 mr-2">
+        <div className="flex items-center gap-2 py-3 pr-6 border-r border-slate-200 mr-2">
           <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-          <span className="font-mono text-xs font-semibold tracking-widest text-zinc-300 uppercase">
-            DeltaV ATA
+          <span className="font-mono text-xs font-semibold tracking-wide text-[#0066B2]">
+            Shift Handoff Copilot
           </span>
         </div>
 
@@ -71,8 +75,8 @@ export default function NavBar() {
               href={link.href}
               className={`px-3 py-3 text-xs font-medium tracking-wide transition-colors border-b-2 ${
                 isActive(link.href)
-                  ? "border-orange-500 text-orange-400"
-                  : "border-transparent text-zinc-500 hover:text-zinc-200"
+                  ? "border-[#0066B2] text-[#0066B2]"
+                  : "border-transparent text-slate-500 hover:text-slate-800"
               }`}
             >
               <span className="hidden sm:inline">{link.label}</span>
@@ -82,17 +86,20 @@ export default function NavBar() {
         </div>
 
         {/* Right side: status pill + reset */}
-        <div className="flex items-center gap-3 py-3 pl-4 border-l border-zinc-800">
+        <div className="flex items-center gap-3 py-3 pl-4 border-l border-slate-200">
           <div className="flex items-center gap-2">
-            <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
-            <span className="font-mono text-xs text-zinc-500 hidden sm:block">
+            <div
+              className="h-1.5 w-1.5 rounded-full animate-pulse"
+              style={{ backgroundColor: "#0066B2" }}
+            />
+            <span className="font-mono text-xs text-slate-400 hidden sm:block">
               RIVERSIDE · NIGHT SHIFT · {displayTime}
             </span>
-            <span className="font-mono text-xs text-zinc-500 sm:hidden">LIVE</span>
+            <span className="font-mono text-xs text-slate-400 sm:hidden">LIVE</span>
           </div>
           <button
             onClick={handleReset}
-            className="font-mono text-[10px] text-zinc-600 hover:text-zinc-300 border border-zinc-800 hover:border-zinc-600 rounded px-2 py-1 transition-colors hidden sm:block"
+            className="font-mono text-[10px] text-slate-500 hover:text-slate-800 border border-slate-300 hover:border-slate-500 rounded px-2 py-1 transition-colors hidden sm:block"
           >
             RESET DEMO
           </button>

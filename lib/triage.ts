@@ -137,26 +137,26 @@ export function getIncidentById(id: string): Incident | null {
 export function getPriorityColor(priority: AlarmPriority): string {
   switch (priority) {
     case "CRITICAL":
-      return "text-red-500";
+      return "text-red-600";
     case "HIGH":
-      return "text-orange-400";
+      return "text-orange-600";
     case "MED":
-      return "text-yellow-400";
+      return "text-yellow-600";
     case "LOW":
-      return "text-slate-400";
+      return "text-slate-500";
   }
 }
 
 export function getPriorityBg(priority: AlarmPriority): string {
   switch (priority) {
     case "CRITICAL":
-      return "bg-red-900/30 border-red-700";
+      return "bg-red-50 border-red-300";
     case "HIGH":
-      return "bg-orange-900/20 border-orange-700";
+      return "bg-orange-50 border-orange-300";
     case "MED":
-      return "bg-yellow-900/20 border-yellow-700";
+      return "bg-yellow-50 border-yellow-300";
     case "LOW":
-      return "bg-slate-800/50 border-slate-700";
+      return "bg-slate-50 border-slate-300";
   }
 }
 
@@ -167,9 +167,9 @@ export function getPriorityBadgeClass(priority: AlarmPriority): string {
     case "HIGH":
       return "bg-orange-500 text-white";
     case "MED":
-      return "bg-yellow-500 text-black";
+      return "bg-amber-400 text-amber-900";
     case "LOW":
-      return "bg-slate-600 text-slate-200";
+      return "bg-slate-200 text-slate-700";
   }
 }
 
